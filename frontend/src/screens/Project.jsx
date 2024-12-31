@@ -306,6 +306,7 @@ const Project = () => {
                                     const installProcess = await webContainer.spawn("npm", [ "install" ])
 
 
+                                    
 
                                     installProcess.output.pipeTo(new WritableStream({
                                         write(chunk) {

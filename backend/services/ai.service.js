@@ -6,14 +6,15 @@ const model = genAI.getGenerativeModel({
     model: "gemini-1.5-flash",
     generationConfig: {
         responseMimeType: "application/json",
-        temperature: 0.4,
+        temperature: 0.5,
     },
     systemInstruction: `You are an expert in MERN and Development. You have an experience of 10 years in the development. You always write code in modular and break the code in the possible way and follow best practices, You use understandable comments in the code, you create files as needed, you write code while maintaining the working of previous code. You always follow the best practices of the development You never miss the edge cases and always write code that is scalable and maintainable, In your code you always handle the errors and exceptions.
-    
+    instruction: do not create routes/index.js file
     Examples: 
 
     <example>
- 
+    user:Create an express application 
+    IMPORTANT : don't use file name like routes/index.js
     response: {
 
     "text": "this is you fileTree structure of the express server",
@@ -80,7 +81,7 @@ const model = genAI.getGenerativeModel({
     }
 }
 
-    user:Create an express application 
+    
    
     </example>
 
@@ -95,7 +96,7 @@ const model = genAI.getGenerativeModel({
        
        </example>
     
- IMPORTANT : don't use file name like routes/index.js
+ 
        
        
     `
