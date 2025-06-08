@@ -6,7 +6,9 @@ import { initializeSocket, receiveMessage, sendMessage } from '../config/socket'
 import Markdown from 'markdown-to-jsx'
 import hljs from 'highlight.js';
 import { getWebContainer } from '../config/webcontainer'
-
+import Chat from './Chat'
+import TaskAssignModal from '../components/TaskAssignModal'
+import AssignedTasks from '../components/AssignedTasks'
 
 function SyntaxHighlightedCode(props) {
     const ref = useRef(null)
@@ -35,8 +37,11 @@ const Project = () => {
     const [ message, setMessage ] = useState('')
     const { user } = useContext(UserContext)
     const messageBox = React.createRef()
-
+    const [selectedUser, setSelectedUser] = useState(null);
     const [ users, setUsers ] = useState([])
+    const [file, setFile] = useState(null);
+    const navigate = useNavigate();
+
     const [ messages, setMessages ] = useState([]) // New state variable for messages
     const [ fileTree, setFileTree ] = useState({})
 
@@ -79,16 +84,55 @@ const Project = () => {
 
     }
 
-    const send = () => {
-
-        sendMessage('project-message', {
-            message,
-            sender: user
-        })
-        setMessages(prevMessages => [ ...prevMessages, { sender: user, message } ]) // Update messages state
-        setMessage("")
-
-    }
+    const send = async () => {
+        if (file) {
+            // If a file is selected, upload it first
+            const formData = new FormData();
+            formData.append('file', file);
+    
+            try {
+                console.log('Uploading file...');
+                const response = await axios.post('/api/upload', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                });
+    
+                console.log('Upload response:', response.data);
+    
+                // Send file path as a message
+                sendMessage('project-message', {
+                    message: response.data.filePath, // Sending file URL
+                    sender: user
+                });
+    
+                setMessages(prevMessages => [
+                    ...prevMessages,
+                    { sender: user, message: response.data.filePath }
+                ]);
+    
+                setFile(null); // Clear file state after sending
+            } catch (error) {
+                console.error('Error uploading file:', error);
+            }
+        } else if (message.trim()) {
+            // If there's text, send it as a message
+            sendMessage('project-message', {
+                message,
+                sender: user
+            });
+    
+            setMessages(prevMessages => [
+                ...prevMessages,
+                { sender: user, message }
+            ]);
+    
+            setMessage(""); // Clear text input after sending
+        } else {
+            console.warn('No message or file to send.');
+        }
+    };
+    
 
     function WriteAiMessage(message) {
 
@@ -208,8 +252,11 @@ const Project = () => {
                                     {msg.sender._id === 'ai' ?
                                         WriteAiMessage(msg.message)
                                         : <p>{msg.message}</p>}
+                                       
                                 </div>
+                                
                             </div>
+                            
                         ))}
                     </div>
 
@@ -221,7 +268,19 @@ const Project = () => {
                         <button
                             onClick={send}
                             className='px-5 bg-slate-950 text-white'><i className="ri-send-plane-fill"></i></button>
+                            
                     </div>
+                    <div className="chat-container max-h-64 flex flex-col">
+  {messages.length > 0 && (
+    <div className="sender-email-header p-2 bg-gray-100 text-sm sticky top-0 z-10">
+      {messages[messages.length - 1].sender.email}
+    </div>
+  )}
+  <div className="chat-content flex-grow overflow-auto">
+    <Chat />
+  </div>
+</div>
+
                 </div>
                 <div className={`sidePanel w-full h-full flex flex-col gap-2 bg-slate-50 absolute transition-all ${isSidePanelOpen ? 'translate-x-0' : '-translate-x-full'} top-0`}>
                     <header className='flex justify-between items-center px-4 p-2 bg-slate-200'>
@@ -236,20 +295,37 @@ const Project = () => {
                     </header>
                     <div className="users flex flex-col gap-2">
 
-                        {project.users && project.users.map(user => {
+                        {project.users && project.users.map((user, index) => {
 
 
                             return (
-                                <div className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
-                                    <div className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
-                                        <i className="ri-user-fill absolute"></i>
-                                    </div>
-                                    <h1 className='font-semibold text-lg'>{user.email}</h1>
+                              <div key={user._id} className="user cursor-pointer  hover:bg-slate-200 p-2 flex gap-2 items-center"
+                              onClick={() => index !== 0 && setSelectedUser(user)}>
+                                <div className="aspect-square rounded-full  w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600">
+                                  <i className="ri-user-fill absolute"></i>
                                 </div>
-                            )
+                                <div className="flex flex-col gap-1">   
+                                <h1 className="font-semibold text-lg">
+                                  {user.email}
+                                </h1>
+                                <small className="text-gray-500  ">
+                                  {index === 0 ? "Leader" : "Member"}
+                                </small>
+                                </div>
+                               <button
+                            className="ml-auto bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700"
+                            onClick={() => navigate(`/tasks/${user._id}`)}
+                        >
+                            View Tasks
+                        </button>
+
+                              </div>
+                              
+                            );
 
 
                         })}
+                        {selectedUser && <TaskAssignModal selectedUser={selectedUser} projectId={project._id} leaderId={project.users[0]._id} onClose={() => setSelectedUser(null)} />}
                     </div>
                 </div>
             </section>

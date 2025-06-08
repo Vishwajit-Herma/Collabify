@@ -12,11 +12,26 @@ const userSchema = new mongoose.Schema({
         minLength: [ 6, 'Email must be at least 6 characters long' ],
         maxLength: [ 50, 'Email must not be longer than 50 characters' ]
     },
-
+    name: {
+        type: String,
+       
+        minLength: [ 3, 'Name must be at least 3 characters long' ],
+        maxLength: [ 50, 'Name must not be longer than 50 characters' ]
+    },
     password: {
         type: String,
         select: false,
-    }
+    },
+      fullName: { type: String, required: true },
+      profilePicture: { type: String },
+      phoneNumber: { type: String, required: true },
+      type: { type: String, enum: ["Student", "Employee"], required: true },
+      collegeName: { type: String, required: function () { return this.type === "Student"; } },
+      branch: { type: String, required: function () { return this.type === "Student"; } },
+      year: { type: String, required: function () { return this.type === "Student"; } },
+      companyName: { type: String, required: function () { return this.type === "Employee"; } },
+      designation: { type: String, required: function () { return this.type === "Employee"; } },
+      projects: [{ type: mongoose.Schema.Types.ObjectId, ref: "project" }],
 })
 
 
